@@ -71,7 +71,7 @@ Based on the 26.3 port from [CaseBacon/ImmersivePortalsMod](https://github.com/C
 - Speaker lookup now uses the local player's physical world.
 - This compatibility patch lives **inside Immersive Portals**. The Simple Voice Chat jar is unchanged, and no custom Voice Chat build is needed.
 - Tested with **Simple Voice Chat 2.6.24**: 400 controlled post-fix speaker lookups succeeded across first person, third person and traversal scenarios.
-- The user subsequently reported clear audio with one other player during their Mac server migration test. This is a bounded user report, not broad platform certification.
+- A two-player playtest reported clear audio with no recurrence of the portal-related dropouts. Broader multiplayer testing remains limited.
 
 ## Current limitations
 
@@ -80,7 +80,7 @@ Based on the 26.3 port from [CaseBacon/ImmersivePortalsMod](https://github.com/C
 - Far-separated same-dimension views have a known vanilla-renderer limitation.
 - Translucent objects in front of a portal can composite incorrectly.
 - Some older integrations/features remain quarantined; this is not complete feature parity with upstream.
-- A reported visual seam could not be reproduced. No speculative seam fix was made; the latest user test reported no recurrence.
+- A reported visual seam could not be reproduced and has not recurred in the latest playtest. Its root cause remains unconfirmed.
 - Compatibility applies to documented versions and test environments. Long sessions, arbitrary modpacks and every GPU/backend combination are not certified.
 
 ## Building
@@ -99,7 +99,7 @@ Tests used isolated worlds and server copies, including real dedicated-server/cl
 - [Modpack integration](docs/phase6-modpack-compatibility.md)
 - [RC2 voice fix and seam investigation](docs/phase81-targeted-client-compatibility.md)
 
-Reports describe results at their phase's completion; later fixes and the user report above supersede earlier limitations only where explicitly documented.
+Reports describe results at their phase's completion; later fixes and playtest feedback supersede earlier limitations only where explicitly documented.
 
 ## Credits and license
 
