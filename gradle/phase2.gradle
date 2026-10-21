@@ -1,0 +1,87 @@
+// Three independent game JVMs, launched from Loom's existing development configurations.
+// No production installation, global profile or production port is used.
+def runId = providers.gradleProperty('phase2_run').getOrElse("run-${System.currentTimeMillis()}")
+if (!(runId ==~ /[A-Za-z0-9_-]+/)) throw new GradleException('Invalid phase2_run name')
+def phaseRoot = layout.buildDirectory.dir("phase2/${runId}").get().asFile
+
+sourceSets {
+    multiplayer {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+dependencies {
+    multiplayerImplementation fabricApi.module('fabric-client-gametest-api-v1', project.fabric_version)
+}
+loom {
+    mods { immersive_portals_multiplayer { sourceSet sourceSets.multiplayer } }
+    runs {
+        phase2Server {
+            server()
+            source sourceSets.multiplayer
+            runDir "${phaseRoot}/server"
+            programArg 'nogui'
+            vmArg "-Dimm_ptl.mp.root=${phaseRoot}"
+            vmArg '-Dimm_ptl.mp.role=server'
+        }
+        phase2ClientA {
+            client()
+            source sourceSets.multiplayer
+            runDir "${phaseRoot}/clientA"
+            programArgs '--username', 'PortalTestA', '--uuid', UUID.nameUUIDFromBytes('OfflinePlayer:PortalTestA'.getBytes('UTF-8')).toString()
+            vmArg '-Dfabric.client.gametest'
+            vmArg '-Dfabric.noGui=true'
+            vmArg "-Dimm_ptl.mp.root=${phaseRoot}"
+            vmArg '-Dimm_ptl.mp.role=A'
+        }
+        phase2ClientB {
+            client()
+            source sourceSets.multiplayer
+            runDir "${phaseRoot}/clientB"
+            programArgs '--username', 'PortalTestB', '--uuid', UUID.nameUUIDFromBytes('OfflinePlayer:PortalTestB'.getBytes('UTF-8')).toString()
+            vmArg '-Dfabric.client.gametest'
+            vmArg '-Dfabric.noGui=true'
+            vmArg "-Dimm_ptl.mp.root=${phaseRoot}"
+            vmArg '-Dimm_ptl.mp.role=B'
+        }
+    }
+}
+
+tasks.register('preparePhase2') {
+    dependsOn 'multiplayerClasses', 'configureLaunch', 'downloadAssets', ':dimlib:classes'
+    doLast {
+        if (project.fabric_version != '0.163.0+26.3') throw new GradleException('Phase 2 requires -Pfabric_version=0.163.0+26.3')
+        if (project.enable_sodium.toBoolean() || project.enable_iris.toBoolean()) throw new GradleException('Optional renderers forbidden')
+        if (phaseRoot.exists()) throw new GradleException("Use a fresh phase2_run; refusing existing ${phaseRoot}")
+        phaseRoot.mkdirs()
+        def launches = [:]
+        [server:'runPhase2Server', A:'runPhase2ClientA', B:'runPhase2ClientB'].each { role, taskName ->
+            def launchTask = tasks.named(taskName).get()
+            def directory = new File(phaseRoot, role == 'server' ? 'server' : "client${role}")
+            directory.mkdirs()
+            // Argfiles avoid Windows command-line length limits; use Java's argfile escaping.
+            // Loom's @argfile supplies only its classpath. Supply that classpath directly
+            // inside our single argfile instead of attempting nested Java argfiles.
+            def args = launchTask.allJvmArgs.findAll { !it.startsWith('-Xmx') && !it.startsWith('-Xms') && !it.startsWith('@') }
+            args += ['-Xmx1536M', '-XX:ActiveProcessorCount=4', '-cp', launchTask.classpath.asPath, launchTask.mainClass.get()]
+            args += launchTask.args
+            launchTask.argumentProviders.each { args += it.asArguments() }
+            def argfile = new File(phaseRoot, "${role}.args")
+            argfile.text = args.collect { '"' + it.toString().replace('\\', '\\\\').replace('"', '\\"') + '"' }.join('\n')
+            launches[role] = [java:launchTask.javaLauncher.get().executablePath.asFile.absolutePath, argfile:argfile.absolutePath,
+                              directory:directory.absolutePath]
+        }
+        new File(phaseRoot, 'launches.json').text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(launches))
+        logger.lifecycle("Phase 2 launch plan: ${phaseRoot}")
+    }
+}
+
+tasks.register('runPhase2Multiplayer') {
+    dependsOn 'preparePhase2'
+    doLast {
+        // The coordinator has no Minecraft singleton. Only the three child JVMs run the game.
+        def coordinator = new GroovyShell(this.class.classLoader).parse(file('gradle/phase2-coordinator.groovy'))
+        coordinator.binding.setVariable('phaseRoot', phaseRoot.toPath())
+        coordinator.run()
+    }
+}

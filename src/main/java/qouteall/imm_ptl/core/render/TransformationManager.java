@@ -15,6 +15,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import qouteall.imm_ptl.core.compat.GravityChangerInterface;
 import qouteall.imm_ptl.core.portal.Portal;
+import qouteall.imm_ptl.core.portal_view.CameraAngles;
 import qouteall.imm_ptl.core.render.context_management.RenderStates;
 import qouteall.imm_ptl.core.render.context_management.WorldRenderInfo;
 import qouteall.q_misc_util.Helper;
@@ -180,7 +181,7 @@ public class TransformationManager {
             DQuaternion newRawCameraRotation = immediateFinalRot.hamiltonProduct(newGravityRot.getConjugated());
             
             Tuple<Double, Double> pitchYaw =
-                DQuaternion.getPitchYawFromRotation(newRawCameraRotation);
+                CameraAngles.fromRotation(newRawCameraRotation, player.getYRot());
             
             float finalYaw = (float) (double) (pitchYaw.getB());
             float finalPitch = (float) (double) (pitchYaw.getA());

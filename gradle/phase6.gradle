@@ -1,0 +1,30 @@
+// Instrumentation jar only. It is never included in the Immersive Portals artifact.
+sourceSets {
+    phase6 {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+tasks.register('phase6DriverJar', Jar) {
+    dependsOn 'phase6Classes'
+    archiveFileName = 'immersive-portals-phase6-driver.jar'
+    from sourceSets.phase6.output
+}
+tasks.register('phase6BootstrapJar', Jar) {
+    dependsOn 'phase6Classes'
+    archiveFileName = 'immersive-portals-phase6-bootstrap.jar'
+    from(sourceSets.phase6.output.classesDirs) {
+        include 'qouteall/imm_ptl/phase6/Control.class', 'qouteall/imm_ptl/phase6/BootstrapDriver*.class'
+    }
+    from('src/phase6/bootstrap.fabric.mod.json') { rename { 'fabric.mod.json' } }
+}
+
+tasks.register('phase81DiagnosticsJar', Jar) {
+    dependsOn 'phase6Classes'
+    archiveFileName = 'immersive-portals-phase81-diagnostics.jar'
+    from(sourceSets.phase6.output.classesDirs) {
+        include 'qouteall/imm_ptl/phase6/Phase81Probe*.class', 'qouteall/imm_ptl/phase6/Phase81DiagnosticClient.class', 'qouteall/imm_ptl/phase6/mixin/Phase81*.class'
+    }
+    from('src/phase6/resources/phase81-probes.mixins.json')
+    from('src/phase6/phase81-diagnostics.fabric.mod.json') { rename { 'fabric.mod.json' } }
+}

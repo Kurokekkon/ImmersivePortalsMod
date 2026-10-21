@@ -5,6 +5,11 @@ import net.caffeinemc.mods.sodium.api.texture.SpriteUtil;
 import net.caffeinemc.mods.sodium.client.render.chunk.map.ChunkStatus;
 import net.caffeinemc.mods.sodium.client.render.chunk.map.ChunkTrackerHolder;
 import net.caffeinemc.mods.sodium.client.util.GameRendererStorage;
+import net.caffeinemc.mods.sodium.client.util.FogStorage;
+import net.caffeinemc.mods.sodium.client.render.viewport.ViewportProvider;
+import net.caffeinemc.mods.sodium.client.world.LevelRendererExtension;
+import net.caffeinemc.mods.sodium.mixin.core.render.world.FrustumAccessor;
+import net.minecraft.client.Camera;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -14,6 +19,7 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
+import qouteall.imm_ptl.core.ClientWorldLoader;
 
 /**
  * Only loaded when Sodium is present. Uses Sodium's public classes only (no mixins into Sodium).
@@ -47,9 +53,44 @@ public class SodiumInterfaceOnPresent extends SodiumInterface.Invoker {
 
     @Override
     public boolean supportsSeveralCamerasPerRenderer() {
-        // render lists (RenderSectionManager, one ChunkRenderList per RenderRegion), cached draw batches and the
-        // chunk uniforms (written once per frame) all belong to the last camera that set up the terrain
-        return false;
+        // Safe only with PortalViewRenderer's extract-then-draw scheduling below.
+        // Active Iris packs use bounded camera-owned pipelines and temporal targets.
+        return true;
+    }
+
+    @Override
+    public boolean requiresSequentialCameraRendering() {
+        return true;
+    }
+
+    @Override
+    public Runnable mainCameraRestorer() {
+        Minecraft mc = Minecraft.getInstance();
+        LevelRendererExtension extension = (LevelRendererExtension) mc.levelRenderer;
+        var renderer = extension.sodium$getWorldRenderer();
+        var matrices = extension.sodium$getMatrices();
+        Camera camera = mc.gameRenderer.mainCamera();
+        var frustum = camera.getCullFrustum();
+        var viewport = ((ViewportProvider) frustum).sodium$createViewport();
+        var fog = ((FogStorage) mc.gameRenderer).sodium$getFogParameters();
+        Matrix4f cullMatrix = new Matrix4f(((FrustumAccessor) frustum).sodium$getMatrix());
+        boolean smartCull = mc.gameRenderer.gameRenderState().levelRenderState.cameraRenderState.smartCull;
+        return () -> {
+            try {
+                renderer.setupTerrain(camera, viewport, fog, smartCull, false, cullMatrix);
+            }
+            finally {
+                extension.sodium$setMatrices(matrices);
+                // Vanilla ends the main renderer once at the real frame boundary.
+                // Remote renderers need the same once-per-frame rotation, never
+                // one rotation for every portal sharing a renderer.
+                for (var remote : ClientWorldLoader.WORLD_RENDERER_MAP.values()) {
+                    if (remote != mc.levelRenderer) {
+                        ((LevelRendererExtension) remote).sodium$getWorldRenderer().endFrame();
+                    }
+                }
+            }
+        };
     }
 
     @Override

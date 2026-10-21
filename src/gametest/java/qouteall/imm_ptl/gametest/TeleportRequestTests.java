@@ -242,6 +242,10 @@ public class TeleportRequestTests {
         helper.assertTrue(newVehicle != null, "player lost the vehicle");
         helper.assertTrue(newVehicle.level().dimension() == Level.NETHER, "vehicle is in " + newVehicle.level().dimension());
         helper.assertTrue(newVehicle.position().distanceTo(player.position()) < 2, "vehicle is not at the player");
+        helper.assertTrue(
+            !((qouteall.imm_ptl.core.ducks.IEServerPlayNetworkHandler) player.connection).ip_hasAwaitingTeleport(),
+            "mounted portal transfer sent an unintended dismount teleport correction"
+        );
         
         TestUtil.removePlayer(player);
         newVehicle.discard();

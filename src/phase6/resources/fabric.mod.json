@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "imm_ptl_phase6_driver",
+  "version": "1.0.0",
+  "name": "Disposable Phase 6 Instrumentation",
+  "environment": "*",
+  "mixins": ["phase6-driver.mixins.json", "phase81-probes.mixins.json"],
+  "entrypoints": {
+    "main": ["qouteall.imm_ptl.phase6.ServerDriver"],
+    "client": ["qouteall.imm_ptl.phase6.ClientDriver"]
+  },
+  "depends": {"minecraft": "26.3", "fabricloader": ">=0.19.5", "automodpack": "5.0.0-rc.4"}
+}

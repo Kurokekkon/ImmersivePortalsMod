@@ -14,6 +14,20 @@ import qouteall.imm_ptl.core.compat.iris_portal_view.IrisPortalClipping;
  */
 @Environment(EnvType.CLIENT)
 public class IrisInterfaceOnPresent extends IrisInterface.Invoker {
+    @Override
+    public Runnable preserveCameraState() {
+        return isShaders() ? qouteall.imm_ptl.core.compat.iris_portal_view.IrisViewPipelines.preserveGlobals() : () -> {};
+    }
+
+    @Override
+    public Runnable beginPortalView(java.util.UUID id) {
+        return qouteall.imm_ptl.core.compat.iris_portal_view.IrisViewPipelines.begin(id);
+    }
+
+    @Override
+    public void releasePortalView(java.util.UUID id) {
+        qouteall.imm_ptl.core.compat.iris_portal_view.IrisViewPipelines.release(id);
+    }
 
     @Override
     public boolean isIrisPresent() {

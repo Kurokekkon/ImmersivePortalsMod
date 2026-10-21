@@ -6,9 +6,10 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.fabricmc.fabric.impl.attachment.AttachmentTargetImpl;
 import net.fabricmc.fabric.impl.attachment.sync.AttachmentChange;
 import net.fabricmc.fabric.impl.attachment.sync.AttachmentSync;
+import net.fabricmc.fabric.api.networking.v1.context.PacketContext;
+import net.fabricmc.fabric.api.networking.v1.context.PacketContextProvider;
 import net.minecraft.network.protocol.game.ClientboundChunkBatchFinishedPacket;
 import net.minecraft.network.protocol.game.ClientboundChunkBatchStartPacket;
-import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
@@ -25,6 +26,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.slf4j.Logger;
 import qouteall.imm_ptl.core.ducks.IEChunkMap;
 import qouteall.imm_ptl.core.miscellaneous.IPVanillaCopy;
+import qouteall.imm_ptl.core.mixin.common.chunk_sync.IEPlayerChunkSender;
 import qouteall.imm_ptl.core.network.PacketRedirection;
 import qouteall.q_misc_util.Helper;
 
@@ -200,11 +202,13 @@ public class PlayerChunkLoading {
         PacketRedirection.withForceRedirect(
             serverLevel,
             () -> {
-                serverGamePacketListenerImpl.send(
-                    new ClientboundLevelChunkWithLightPacket(
-                        levelChunk, serverLevel.getLightEngine(), null, null
-                    )
-                );
+                // Reuse vanilla's single-chunk send so other mods' constructor/tail
+                // hooks (Polymer recipient filtering and virtual-entity tracking)
+                // run exactly once, within the destination's redirection context.
+                PacketContext.supplyWithContext((PacketContextProvider) serverGamePacketListenerImpl, () -> {
+                    IEPlayerChunkSender.ip_sendChunk(serverGamePacketListenerImpl, serverLevel, levelChunk);
+                    return null;
+                });
                 
                 onSendPacket(serverGamePacketListenerImpl, levelChunk);
             }

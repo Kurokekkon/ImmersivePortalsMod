@@ -195,13 +195,16 @@ public class ClientPortalTests implements FabricClientGameTest {
             boolean sameDimensionDrawn = context.computeOnClient(
                 mc -> PortalViewRenderer.isViewDrawnThisFrame(sameDimensionPortalId)
             );
-            if (SodiumInterface.invoker.isSodiumPresent()) {
-                // a Sodium level renderer is only used by one camera per frame
-                check(!sameDimensionDrawn, "with Sodium, same-dimension portal views are not drawn");
-            }
-            else {
-                check(sameDimensionDrawn, "the same-dimension portal view was not drawn");
-            }
+            check(sameDimensionDrawn, "the same-dimension portal destination view was not drawn (Phase 3 regression)");
+            int samePixel = centerPixel(context.takeScreenshot("phase3_same_dimension_pixels"));
+            check(isEmerald(samePixel), "same-dimension destination is not emerald: " + describe(samePixel));
+            singleplayer.getServer().runCommand("tp @a 0.5 " + surfaceY + " 3.53 180 0");
+            connection.waitForClientboundPackets();
+            context.waitTicks(8);
+            int nearSamePixel = centerPixel(context.takeScreenshot("phase3_same_dimension_near_plane"));
+            check(isEmerald(nearSamePixel), "near-plane same-dimension destination is not emerald: " + describe(nearSamePixel));
+            singleplayer.getServer().runCommand("tp @a 0.5 " + surfaceY + " 6.5 180 0");
+            connection.waitForClientboundPackets();
             // the main view must stay stable while its renderer is also used for the portal view
             context.waitTicks(20);
             context.takeScreenshot("imm_ptl_05_same_dimension_portal_later");
@@ -265,6 +268,11 @@ public class ClientPortalTests implements FabricClientGameTest {
     private static boolean isGold(int argb) {
         int r = ARGB.red(argb), g = ARGB.green(argb), b = ARGB.blue(argb);
         return r > 150 && g > 100 && b < r * 0.6;
+    }
+
+    private static boolean isEmerald(int argb) {
+        return ARGB.green(argb) > 70 && ARGB.green(argb) > ARGB.red(argb) * 1.3
+            && ARGB.green(argb) > ARGB.blue(argb) * 1.1;
     }
 
     private static String describe(int argb) {

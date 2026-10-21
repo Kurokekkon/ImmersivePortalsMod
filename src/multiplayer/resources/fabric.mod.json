@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "immersive_portals_multiplayer",
+  "version": "1.0.0",
+  "name": "Immersive Portals isolated multiplayer tests",
+  "environment": "*",
+  "license": "Apache-2.0",
+  "entrypoints": {
+    "main": ["qouteall.imm_ptl.multiplayer.MultiplayerServerDriver"],
+    "fabric-client-gametest": ["qouteall.imm_ptl.multiplayer.MultiplayerClientTest"]
+  },
+  "mixins": ["multiplayer-tests.mixins.json"],
+  "depends": {"immersive_portals": "*", "fabric-api": ">=0.163.0"}
+}

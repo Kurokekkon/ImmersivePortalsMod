@@ -29,6 +29,7 @@ import net.minecraft.client.renderer.BindGroupLayouts;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.GlobalSettingsUniform;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.CloudRenderer;
 import net.minecraft.client.renderer.Lightmap;
 import net.minecraft.client.renderer.LightmapRenderStateExtractor;
 import net.minecraft.client.renderer.ProjectionMatrixBuffer;
@@ -60,6 +61,7 @@ import qouteall.imm_ptl.core.compat.sodium_compatibility.SodiumInterface;
 import qouteall.imm_ptl.core.mixin.client.portal_view.GameRendererAccessor;
 import qouteall.imm_ptl.core.mixin.client.portal_view.LevelExtractorAccessor;
 import qouteall.imm_ptl.core.mixin.client.portal_view.LevelRendererAccessor;
+import qouteall.imm_ptl.core.mixin.client.portal_view.CloudRendererAccessor;
 import qouteall.imm_ptl.core.portal.Mirror;
 import qouteall.imm_ptl.core.portal.Portal;
 import qouteall.imm_ptl.core.portal.global_portals.GlobalPortalStorage;
@@ -137,6 +139,7 @@ public final class PortalViewRenderer {
 
     private static final class View implements AutoCloseable {
         final LevelRenderState state = new LevelRenderState();
+        final CloudRenderer clouds = new CloudRenderer();
         // the lightmap of the destination, from the view camera's environment attributes
         final Lightmap lightmap = new Lightmap();
         final LightmapRenderState lightmapState = new LightmapRenderState();
@@ -181,6 +184,8 @@ public final class PortalViewRenderer {
 
         @Override
         public void close() {
+            if (portal != null) IrisInterface.invoker.releasePortalView(portal.getUUID());
+            clouds.close();
             lightmap.close();
             fogRenderer.close();
             projectionBuffer.close();
@@ -198,6 +203,7 @@ public final class PortalViewRenderer {
     private static boolean sharedRendererWarned = false;
     private static final List<View> FRAME_VIEWS = new ArrayList<>();
     private static long frameIndex = 0;
+    private static @Nullable DeltaTracker frameDeltaTracker;
 
     public static void init() {
         RenderPipelines.register(PIPELINE);
@@ -214,6 +220,7 @@ public final class PortalViewRenderer {
             view.close();
         }
         VIEWS.clear();
+        frameDeltaTracker = null;
     }
 
     // ---------------------------------------------------------------- extraction
@@ -223,6 +230,7 @@ public final class PortalViewRenderer {
      */
     public static void extractViews(DeltaTracker deltaTracker) {
         FRAME_VIEWS.clear();
+        frameDeltaTracker = deltaTracker;
         frameIndex++;
         releaseExpiredViews();
 
@@ -252,7 +260,7 @@ public final class PortalViewRenderer {
                     if (!sharedRendererWarned) {
                         sharedRendererWarned = true;
                         LOGGER.warn(
-                            "With Sodium, portals into the player's dimension and a second portal view into the "
+                            "With the active shader pipeline, portals into the player's dimension and a second portal view into the "
                                 + "same dimension in one frame are not drawn"
                         );
                     }
@@ -264,7 +272,11 @@ public final class PortalViewRenderer {
             view.lastUsedFrame = frameIndex;
 
             try {
-                extractView(view, portal, mainCamera, level, destLevel, cameraEntity, deltaTracker, partialTicks);
+                // Sodium's terrain lists/batches belong to the most recently extracted camera.
+                // Do not touch them while the main view is still waiting to be drawn.
+                if (!SodiumInterface.invoker.requiresSequentialCameraRendering()) {
+                    extractView(view, portal, mainCamera, level, destLevel, cameraEntity, deltaTracker, partialTicks);
+                }
                 FRAME_VIEWS.add(view);
             }
             catch (RuntimeException e) {
@@ -434,27 +446,42 @@ public final class PortalViewRenderer {
         GpuBuffer savedGlobals = RenderSystem.getGlobalSettingsUniform();
 
         List<View> drawnViews = new ArrayList<>();
-        for (View view : FRAME_VIEWS) {
-            try {
-                renderView(view, mainTarget, gameRendererAccess, gameRenderState);
-                drawnViews.add(view);
+        boolean sequential = SodiumInterface.invoker.requiresSequentialCameraRendering();
+        Runnable restoreMainCamera = sequential ? SodiumInterface.invoker.mainCameraRestorer() : () -> {};
+        try {
+            for (View view : FRAME_VIEWS) {
+                Runnable restoreShaderScratch = IrisInterface.invoker.preserveCameraState();
+                try {
+                    if (sequential) {
+                        ClientLevel destination = ClientWorldLoader.getOptionalWorld(view.portal.getDestDim());
+                        if (destination == null || frameDeltaTracker == null) continue;
+                        extractView(view, view.portal, gameRenderer.mainCamera(), mc.level, destination,
+                            mc.getCameraEntity(), frameDeltaTracker, frameDeltaTracker.getGameTimeDeltaPartialTick(false));
+                    }
+                    renderView(view, mainTarget, gameRendererAccess, gameRenderState);
+                    drawnViews.add(view);
+                }
+                catch (RuntimeException e) {
+                    LOGGER.error("Failed to render the view of {}", view.portal, e);
+                }
+                finally {
+                    gameRendererAccess.ip_setMainRenderTarget(mainTarget);
+                    restoreShaderScratch.run();
+                }
             }
-            catch (RuntimeException e) {
-                LOGGER.error("Failed to render the view of {}", view.portal, e);
+        }
+        finally {
+            try {
+                restoreMainCamera.run();
             }
             finally {
-                gameRendererAccess.ip_setMainRenderTarget(mainTarget);
+                Camera camera = gameRenderer.mainCamera();
+                mc.levelRenderer.blockEntityRenderDispatcher().prepare(camera.position());
+                mc.levelRenderer.entityRenderDispatcher().prepare(camera, mc.crosshairPickEntity);
+                if (savedProjection != null) RenderSystem.setProjectionMatrix(savedProjection, savedProjectionType);
+                if (savedFog != null) RenderSystem.setShaderFog(savedFog);
+                if (savedGlobals != null) RenderSystem.setGlobalSettingsUniform(savedGlobals);
             }
-        }
-
-        if (savedProjection != null) {
-            RenderSystem.setProjectionMatrix(savedProjection, savedProjectionType);
-        }
-        if (savedFog != null) {
-            RenderSystem.setShaderFog(savedFog);
-        }
-        if (savedGlobals != null) {
-            RenderSystem.setGlobalSettingsUniform(savedGlobals);
         }
 
         CameraRenderState mainCamera = gameRenderState.levelRenderState.cameraRenderState;
@@ -488,32 +515,41 @@ public final class PortalViewRenderer {
             gameRenderState.optionsRenderState.textureFiltering == TextureFilteringMethod.RGSS
         );
 
-        // The clouds' uniform buffer is written by every LevelRenderer.render call and rotated once per frame
-        // (LevelRenderer.endFrame, which vanilla only calls for the player's level renderer). A draw recorded
-        // earlier in this frame by the same level renderer must keep its data, so this draw gets the next
-        // (fenced) buffer.
-        levelRenderer.endFrame();
-
         LevelRendererAccessor levelRendererAccess = (LevelRendererAccessor) levelRenderer;
+        // Rotating a shared renderer's frame buffers for every camera can wrap its
+        // ring inside one GPU submit. Clouds therefore own per-view geometry/buffers;
+        // Sodium's dynamic terrain uniform storage appends a slice per camera and
+        // rotates only once per actual frame.
+        CloudRenderer originalClouds = levelRendererAccess.ip_getCloudRenderer();
+        var sourceTexture = ((CloudRendererAccessor) originalClouds).ip_getTexture();
+        CloudRendererAccessor viewClouds = (CloudRendererAccessor) view.clouds;
+        if (viewClouds.ip_getTexture() != sourceTexture) {
+            viewClouds.ip_setTexture(sourceTexture);
+            view.clouds.markForRebuild();
+        }
         LevelRenderState originalState = levelRendererAccess.ip_getLevelRenderState();
-        levelRendererAccess.ip_setLevelRenderState(view.state);
-        gameRendererAccess.ip_setMainRenderTarget(view.target);
         // Iris (with a shader pack) takes the camera of its uniforms, sky and shadow pass from
         // GameRenderer.mainCamera(); vanilla does not read it while drawing a level
         Camera mainCamera = gameRendererAccess.ip_getMainCamera();
-        gameRendererAccess.ip_setMainCamera(view.camera);
-        view.lightmap.render(view.lightmapState);
         Lightmap mainLightmap = gameRendererAccess.ip_getLightmap();
-        gameRendererAccess.ip_setLightmap(view.lightmap);
-        Runnable render = () -> levelRenderer.render(
-            gameRendererAccess.ip_getResourcePool(), false, cameraState,
-            terrainFog, cameraState.fogData.color, true, false
-        );
-        Matrix4f previousTerrainProjection = SodiumInterface.invoker.swapTerrainProjection(cameraState.projectionMatrix);
-        if (view.shaderClipCoefficients != null) {
-            IrisInterface.invoker.setShaderClipping(view.shaderClipCoefficients);
-        }
+        Runnable render = () -> {
+            Runnable restoreShaderCamera = IrisInterface.invoker.beginPortalView(view.portal.getUUID());
+            try {
+                levelRenderer.render(gameRendererAccess.ip_getResourcePool(), false, cameraState,
+                    terrainFog, cameraState.fogData.color, true, false);
+            }
+            finally { restoreShaderCamera.run(); }
+        };
+        Matrix4f previousTerrainProjection = null;
         try {
+            levelRendererAccess.ip_setCloudRenderer(view.clouds);
+            levelRendererAccess.ip_setLevelRenderState(view.state);
+            gameRendererAccess.ip_setMainRenderTarget(view.target);
+            gameRendererAccess.ip_setMainCamera(view.camera);
+            view.lightmap.render(view.lightmapState);
+            gameRendererAccess.ip_setLightmap(view.lightmap);
+            previousTerrainProjection = SodiumInterface.invoker.swapTerrainProjection(cameraState.projectionMatrix);
+            if (view.shaderClipCoefficients != null) IrisInterface.invoker.setShaderClipping(view.shaderClipCoefficients);
             if (destLevel == Minecraft.getInstance().level) {
                 render.run();
             }
@@ -525,13 +561,15 @@ public final class PortalViewRenderer {
             gameRendererAccess.ip_setMainCamera(mainCamera);
             gameRendererAccess.ip_setLightmap(mainLightmap);
             levelRendererAccess.ip_setLevelRenderState(originalState);
-            view.fogRenderer.endFrame();
+            levelRendererAccess.ip_setCloudRenderer(originalClouds);
             if (previousTerrainProjection != null) {
                 SodiumInterface.invoker.swapTerrainProjection(previousTerrainProjection);
             }
             if (view.shaderClipCoefficients != null) {
                 IrisInterface.invoker.setShaderClipping(null);
             }
+            try { view.clouds.endFrame(); }
+            finally { view.fogRenderer.endFrame(); }
         }
         
         if (debugDumpPath != null) {
@@ -624,6 +662,14 @@ public final class PortalViewRenderer {
      */
     public static int getViewCountThisFrame() {
         return FRAME_VIEWS.size();
+    }
+
+    public static int getRetainedViewCount() {
+        return VIEWS.size();
+    }
+
+    public static long getRenderTargetCount() {
+        return VIEWS.values().stream().filter(view -> view.target != null).count();
     }
 
     /**

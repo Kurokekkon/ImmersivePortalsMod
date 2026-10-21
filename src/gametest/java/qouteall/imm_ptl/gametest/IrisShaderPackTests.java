@@ -47,21 +47,29 @@ public class IrisShaderPackTests implements FabricClientGameTest {
 
     @Override
     public void runTest(ClientGameTestContext context) {
+        ClientTestReport report = new ClientTestReport("iris", "shader-packs", "complementary-shader-packs");
         if (!FabricLoader.getInstance().isModLoaded("iris")) {
-            LOGGER.warn("SKIPPED IrisShaderPackTests: Iris is not loaded");
+            report.prerequisiteMissing("Iris is not loaded",
+                System.getProperty("imm_ptl.test.selection", "all").equals("iris"));
             return;
         }
+        report.step("shader-packs", () -> runPacks(context, report));
+    }
 
+    private void runPacks(ClientGameTestContext context, ClientTestReport report) {
         List<String> packs = new ArrayList<>();
         packs.add(context.computeOnClient(mc -> IrisControl.writeMinimalPack()));
         packs.addAll(context.computeOnClient(mc -> IrisControl.findPacks("Complementary")));
         if (packs.size() == 1) {
-            LOGGER.warn("IrisShaderPackTests: no Complementary Shaders zip in the shaderpacks directory; only the minimal pack is tested");
+            report.skip("complementary-shader-packs", "No Complementary Shaders zip; only the minimal pack is tested");
         }
 
         try {
-            for (String pack : packs) {
-                testPack(context, pack);
+            testPack(context, packs.getFirst());
+            if (packs.size() > 1) {
+                report.step("complementary-shader-packs", () -> {
+                    for (String pack : packs.subList(1, packs.size())) testPack(context, pack);
+                });
             }
         }
         finally {

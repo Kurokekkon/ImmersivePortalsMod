@@ -31,7 +31,10 @@ public abstract class MixinServerPlayer extends Player implements IEServerPlayer
     
     @Override
     public void ip_stopRidingWithoutTeleportRequest() {
-        super.stopRiding();
+        // LivingEntity.stopRiding performs a dismount placement/teleport. During a portal
+        // transfer that sends an obsolete source-dimension correction and breaks the
+        // teleport acknowledgement sequence. Detach without that placement step.
+        super.removeVehicle();
     }
     
     @Override

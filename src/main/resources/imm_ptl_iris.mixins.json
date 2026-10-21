@@ -5,7 +5,11 @@
   "plugin": "qouteall.imm_ptl.core.compat.IPCompatMixinPlugin",
   "mixins": [
     "MixinIrisCommonUniforms",
-    "MixinIrisShaderCreator"
+    "MixinIrisShaderCreator",
+    "IrisPipelineManagerAccessor",
+    "MixinIrisPipelineManager",
+    "IrisPipelineAccessor",
+    "IrisRenderSystemAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

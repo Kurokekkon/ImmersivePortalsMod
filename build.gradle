@@ -89,6 +89,8 @@ def portQuarantine = [
 ]
 // files inside quarantined directories that are already ported
 def portQuarantineKeep = [
+    'qouteall/imm_ptl/core/compat/mixin/polymer/MixinPolymerImmersivePortalsUtils.java',
+    'qouteall/imm_ptl/core/compat/mixin/polymer/MixinPolymerCoreImmersivePortalsUtils.java',
     'qouteall/imm_ptl/core/compat/iris_compatibility/IrisInterface.java',
     'qouteall/imm_ptl/core/compat/iris_compatibility/IrisInterfaceOnPresent.java',
     // render state and math classes (no GPU calls) are ported first
@@ -140,6 +142,8 @@ dependencies {
 
     compileOnly "${project.sodium_path}"
     compileOnly "${project.iris_path}"
+    // Optional Nvidium adapter only; never bundled or added to the runtime mod set.
+    compileOnly "maven.modrinth:nvidium:8mVK1zbk" // 0.4.4-beta7-26.3
 
     if (project.enable_sodium.equals('true')) {
         localRuntime "${project.sodium_path}"
@@ -226,10 +230,44 @@ loom {
             vmArg "-Dfabric.client.gametest"
             // a failed test must end the process instead of waiting in Fabric Loader's error window
             vmArg "-Dfabric.noGui=true"
-            runDir "build/clientgametest"
+            vmArg "-Dimm_ptl.test.selection=${providers.gradleProperty('client_test').getOrElse('all')}"
+            runDir providers.gradleProperty('client_run_dir').getOrElse('build/clientgametest')
         }
     }
 }
+
+// Select existing client entrypoints without running unrelated visual/integration suites.
+// Only the generated test-mod manifest is filtered; nothing changes in the shipped mod.
+def clientTestSelection = providers.gradleProperty('client_test').getOrElse('all')
+def clientTestClasses = [
+    dedicated: 'DedicatedServerPortalTests', mounted: 'DedicatedServerPortalTests', core: 'ClientPortalTests',
+    iris: 'IrisShaderPackTests', phase3: 'SodiumMulticameraTests', accuracy: 'PortalViewAccuracyTests',
+    phase3_all: ['ClientPortalTests', 'SodiumMulticameraTests'],
+    phase3_vanilla: ['ClientPortalTests', 'PortalViewAccuracyTests'],
+    phase4: 'SodiumMulticameraTests', phase4_stress: 'SodiumMulticameraTests', phase4_sanity: 'SodiumMulticameraTests',
+    phase5_baseline: 'IrisMulticameraTests', phase5: 'IrisMulticameraTests', phase5_stress: 'IrisMulticameraTests',
+    phase5_secondary: 'IrisMulticameraTests', phase5_state_probe: 'IrisMulticameraTests'
+]
+if (clientTestSelection != 'all' && !clientTestClasses.containsKey(clientTestSelection)) {
+    throw new GradleException("Unknown client_test '${clientTestSelection}'; use all or ${clientTestClasses.keySet().join(', ')}")
+}
+tasks.named('processGametestResources') {
+    inputs.property('client_test', clientTestSelection)
+    doLast {
+        def manifest = destinationDir.toPath().resolve('fabric.mod.json').toFile()
+        def json = new groovy.json.JsonSlurper().parse(manifest)
+        if (clientTestSelection != 'all') {
+            def selected = clientTestClasses[clientTestSelection]
+            json.entrypoints['fabric-client-gametest'] = (selected instanceof List ? selected : [selected]).collect {
+                "qouteall.imm_ptl.gametest.${it}".toString()
+            }
+        }
+        manifest.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(json))
+    }
+}
+
+apply from: 'gradle/phase2.gradle'
+apply from: 'gradle/phase6.gradle'
 
 // local maven only; no remote repositories are configured on purpose
 publishing {

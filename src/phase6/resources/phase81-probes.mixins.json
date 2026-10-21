@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "qouteall.imm_ptl.phase6.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["Phase81FrameProbe", "Phase81RenderProbe", "Phase81ViewProbe", "Phase81CameraProbe", "Phase81AudioProbe"],
+  "injectors": {"defaultRequire": 1}
+}

@@ -5,6 +5,7 @@ import net.minecraft.advancements.triggers.CriteriaTriggers;
 import com.mojang.logging.LogUtils;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
@@ -218,6 +219,27 @@ public class BlockManipulationServer {
         }
         
         if (isAttackingAction(action)) {
+            if (!world.isInWorldBounds(blockPos)) {
+                return;
+            }
+            // Fabric's start-break hook skips its event when the untransformed player
+            // position is out of reach. Portal-aware reach was checked above; invoke
+            // that hook here only in the case Fabric would skip, avoiding duplicate events.
+            if (action == ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK
+                && !player.isWithinBlockInteractionRange(blockPos, 1.0)) {
+                InteractionResult result = AttackBlockCallback.EVENT.invoker().interact(
+                    player, world, InteractionHand.MAIN_HAND, blockPos, packet.getDirection()
+                );
+                if (result != InteractionResult.PASS) {
+                    player.connection.ackBlockChangesUpTo(packet.getSequence());
+                    player.connection.send(new ClientboundBlockUpdatePacket(world, blockPos));
+                    var blockEntity = world.getBlockEntity(blockPos);
+                    if (blockEntity != null && blockEntity.getUpdatePacket() != null) {
+                        player.connection.send(blockEntity.getUpdatePacket());
+                    }
+                    return;
+                }
+            }
             player.gameMode.handleBlockBreakAction(
                 blockPos, action, packet.getDirection(),
                 world.getMaxY(), packet.getSequence()

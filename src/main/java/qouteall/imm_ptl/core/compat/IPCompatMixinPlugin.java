@@ -24,6 +24,15 @@ public class IPCompatMixinPlugin implements IMixinConfigPlugin {
         
         
         FabricLoader fabricLoader = FabricLoader.getInstance();
+        if (mixinClassName.contains("VoiceChat")) {
+            return fabricLoader.isModLoaded("voicechat");
+        }
+        if (mixinClassName.contains("Polymer")) {
+            return fabricLoader.isModLoaded("polymer-virtual-entity");
+        }
+        if (mixinClassName.contains("Nvidium")) {
+            return fabricLoader.isModLoaded("nvidium");
+        }
         if (mixinClassName.contains("IrisSodium")) {
             boolean sodiumLoaded = fabricLoader.isModLoaded("sodium");
             boolean irisLoaded = fabricLoader.isModLoaded("iris");

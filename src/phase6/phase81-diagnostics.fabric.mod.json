@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "imm_ptl_phase81_diagnostics",
+  "version": "1.0.0",
+  "name": "IP bounded client diagnostics (opt-in)",
+  "environment": "client",
+  "entrypoints": {"client": ["qouteall.imm_ptl.phase6.Phase81DiagnosticClient"]},
+  "mixins": ["phase81-probes.mixins.json"],
+  "depends": {"minecraft": "26.3", "fabricloader": ">=0.19.5", "fabric-api": "*", "immersive_portals": "6.0.6"}
+}

@@ -7,16 +7,25 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Everything Immersive Portals needs from Iris. The default invoker is used when Iris is absent;
- * {@link IrisInterfaceOnPresent} (the only active class that references Iris) is installed when it is loaded.
+ * {@link IrisInterfaceOnPresent} and the optional camera-pipeline adapter are loaded only with Iris.
  * <p>
  * With a shader pack in use, Iris renders every {@code LevelRenderer.render} call through the pipeline of the
  * current dimension and takes its camera from {@code GameRenderer.mainCamera()}; {@code PortalViewRenderer} sets
- * both up for a portal view (see "Iris" in docs/26.3-port-progress.md).
+ * both up for a portal view. Camera-owned pipelines isolate shader temporal resources
+ * (see docs/phase5-iris-active-shaders.md).
  */
 @Environment(EnvType.CLIENT)
 public class IrisInterface {
 
     public static class Invoker {
+        /** Iris extraction hooks also mutate singleton fog/lighting scratch values. */
+        public Runnable preserveCameraState() { return () -> {}; }
+
+        /** Begin an Iris-owned camera scope; always invoke the returned restoration in finally. */
+        public Runnable beginPortalView(java.util.UUID id) { return () -> {}; }
+
+        public void releasePortalView(java.util.UUID id) {}
+
         public boolean isIrisPresent() {
             return false;
         }

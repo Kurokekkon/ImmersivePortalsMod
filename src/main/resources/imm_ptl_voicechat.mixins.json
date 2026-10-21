@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "package": "qouteall.imm_ptl.core.compat.voicechat.mixin",
+  "plugin": "qouteall.imm_ptl.core.compat.IPCompatMixinPlugin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["MixinVoiceChatAudioChannel"],
+  "injectors": {"defaultRequire": 1}
+}

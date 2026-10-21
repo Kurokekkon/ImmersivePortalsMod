@@ -3,8 +3,10 @@
   "package": "qouteall.imm_ptl.gametest.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
-    "ServerGamePacketListenerImplAccessor"
+    "ServerGamePacketListenerImplAccessor",
+    "TicketStorageAccessor"
   ],
+  "client": ["PortalViewOrderMixin"],
   "injectors": {
     "defaultRequire": 1
   }

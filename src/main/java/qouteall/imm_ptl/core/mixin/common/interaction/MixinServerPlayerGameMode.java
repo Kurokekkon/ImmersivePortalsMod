@@ -2,6 +2,7 @@ package qouteall.imm_ptl.core.mixin.common.interaction;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
@@ -39,6 +40,35 @@ public class MixinServerPlayerGameMode {
     
     @Unique
     private ServerLevel ip_destroyPosLevel;
+
+    // Field redirects in vanilla methods do not affect Fabric's injected event handlers.
+    // Scope the actual field too, so all break callbacks receive the destination world.
+    @WrapMethod(method = "handleBlockBreakAction")
+    private void ip_withBreakWorld(BlockPos pos, ServerboundPlayerActionPacket.Action action,
+                                   Direction face, int height, int sequence, Operation<Void> original) {
+        ServerLevel previous = level;
+        level = ip_getActualWorld();
+        try {
+            original.call(pos, action, face, height, sequence);
+        }
+        finally {
+            level = previous;
+        }
+    }
+
+    @WrapMethod(method = "tick")
+    private void ip_withPendingBreakWorld(Operation<Void> original) {
+        ServerLevel previous = level;
+        if (ip_destroyPosLevel != null) {
+            level = ip_destroyPosLevel;
+        }
+        try {
+            original.call();
+        }
+        finally {
+            level = previous;
+        }
+    }
     
     @Unique
     private ServerLevel ip_getActualWorld() {

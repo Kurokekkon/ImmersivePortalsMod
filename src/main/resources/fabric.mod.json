@@ -46,7 +46,10 @@
     "imm_ptl.mixins.json",
     "imm_ptl_fabric.mixins.json",
     "q_misc_util.mixins.json",
-    "imm_ptl_iris.mixins.json"
+    "imm_ptl_iris.mixins.json",
+    "imm_ptl_nvidium.mixins.json",
+    "imm_ptl_polymer.mixins.json",
+    "imm_ptl_voicechat.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.19.5",

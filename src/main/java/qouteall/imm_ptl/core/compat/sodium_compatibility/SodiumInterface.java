@@ -14,7 +14,8 @@ import org.jspecify.annotations.Nullable;
  * <p>
  * Sodium gives every {@code LevelRenderer} its own {@code SodiumWorldRenderer}, so every client world has its
  * own chunk meshes and render lists. A Sodium renderer keeps one camera's culling results and draw batches per
- * frame, so the portal view renderer only lets one camera use it per frame ({@link #supportsSeveralCamerasPerRenderer}).
+ * preparation. The portal view renderer extracts and draws each Sodium camera sequentially after the main draw,
+ * then restores the main terrain camera. Uniform storage advances once per actual frame, not once per view.
  */
 @Environment(EnvType.CLIENT)
 public class SodiumInterface {
@@ -45,6 +46,16 @@ public class SodiumInterface {
          */
         public boolean supportsSeveralCamerasPerRenderer() {
             return true;
+        }
+
+        /** Shared terrain state must be extracted immediately before its draw, after the main draw. */
+        public boolean requiresSequentialCameraRendering() {
+            return false;
+        }
+
+        /** Capture a restoration action before portal cameras touch the main terrain renderer. */
+        public Runnable mainCameraRestorer() {
+            return () -> {};
         }
 
         /**

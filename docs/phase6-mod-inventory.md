@@ -1,0 +1,64 @@
+# Phase 6 actual source mod inventory
+
+Read from the stopped production source before cloning. Versions and hashes are preserved in `build/phase6-inspection/source-mod-inventory.json`. No mod updates were performed.
+
+| Category | File | Mod ID | Version |
+| --- | --- | --- | --- |
+| server | archers-fabric-3.1.4+26.3.jar | archers | 3.1.4+26.3 |
+| server | architectury-fabric-22.0.5.jar | architectury | 22.0.5 |
+| server | armor_model_api-fabric-1.1.2+26.3.jar | armor_model_api | 1.1.2+26.3 |
+| server | armory-fabric-1.5.3+26.3.jar | armory_rpgs | 1.5.3+26.3 |
+| server | arsenal-fabric-1.5.1+26.3.jar | arsenal | 1.5.1+26.3 |
+| server | automodpack-5.0.0-rc.4.jar | automodpack | 5.0.0-rc.4 |
+| server | balm-fabric-26.3-26.3.0.3.jar | balm | 26.3.0.3 |
+| server | bundle-api-fabric-5.0.0+26.3.jar | bundleapi | 5.0.0+26.3 |
+| server | carryon-fabric-26.3-2.12.0.jar | carryon | 2.12.0 |
+| server | chronodawn-0.12.0+26.3-fabric.jar | chronodawn | 0.12.0 |
+| server | Chunky-Fabric-1.5.3.jar | chunky | 1.5.3 |
+| server | cloth-config-fabric-26.3.159.jar | cloth-config | 26.3.159 |
+| server | collective-26.3.0-8.58.jar | collective | 8.58 |
+| server | critical_strike-fabric-1.0.6+26.3.jar | critical_strike | 1.0.6+26.3 |
+| server | fabric-api-0.163.0+26.3.jar | fabric-api | 0.163.0+26.3 |
+| server | fabric-api-0.164.0+26.3.jar | fabric-api | 0.164.0+26.3 |
+| server | fabric-language-kotlin-1.14.2+kotlin.2.4.21.jar | fabric-language-kotlin | 1.14.2+kotlin.2.4.21 |
+| server | FarmersDelight-26.3-3.6.28+refabricated.jar | farmersdelight | 26.3-3.6.28+refabricated |
+| server | ForgeConfigAPIPort-v26.3.1-mc26.3.x-Fabric.jar | forgeconfigapiport | 26.3.1 |
+| server | gazebo-fabric-2.2.1+26.3.jar | gazebo | 2.2.1+26.3 |
+| server | graves-3.13.0+26.3.jar | universal-graves | 3.13.0+26.3 |
+| server | healingcampfire-26.3.0-6.4.jar | healingcampfire | 6.4 |
+| server | jewelry-fabric-2.5.1+26.3.jar | jewelry | 2.5.1+26.3 |
+| server | ledger-1.3.25.jar | ledger | 1.3.25 |
+| server | lootr-fabric-26.3-1.25.42.124.jar | lootr | 1.25.42.124 |
+| server | malilib-fabric-26.3-0.30.2.jar | malilib | 0.30.2 |
+| server | open-parties-and-claims-fabric-26.3-0.33.0.jar | openpartiesandclaims | 0.33.0 |
+| server | paladins-fabric-3.1.4.1+26.3.jar | paladins | 3.1.4.1+26.3 |
+| server | PlayerAnimationLibMerged-1.2.8+mc.26.3.jar | player_animation_library | 1.2.8+mc.26.3 |
+| server | polymer-bundled-0.18.4+26.3.jar | polymer-bundled | 0.18.4+26.3 |
+| server | puffish_skills-0.19.2-26.3-fabric.jar | puffish_skills | 0.19.2 |
+| server | ranged_weapon_api-fabric-4.0.0+26.3.jar | ranged_weapon_api | 4.0.0+26.3 |
+| server | relics-fabric-1.4.1+26.3.jar | relics_rpgs | 1.4.1+26.3 |
+| server | rogues-fabric-3.1.4.1+26.3.jar | rogues | 3.1.4.1+26.3 |
+| server | runes-fabric-1.3.2+26.3.jar | runes | 1.3.2+26.3 |
+| server | shogi-fabric-26.3-26.3.0.3.jar | shogi | 26.3.0.3 |
+| server | shootingstar.jar | shooting_star_demo_multi | 1.4.3-demo |
+| server | skill_tree-fabric-1.6.2+26.3.jar | skill_tree_rpgs | 1.6.2+26.3 |
+| server | spell_engine-fabric-1.10.9+26.3.jar | spell_engine | 1.10.9+26.3 |
+| server | spell_power-fabric-1.6.2+26.3.jar | spell_power | 1.6.2+26.3 |
+| server | structure_pool_api-fabric-1.3.0+26.3.jar | structure_pool_api | 1.3.0+26.3 |
+| server | travelersbackpack-fabric-26.3-11.4.1.jar | travelersbackpack | 11.4.1 |
+| server | tree-vein-miner-4.3.2.jar | mr_tree_veinminer | 4.3.2 |
+| server | trinkets-4.2.1+26.3.jar | trinkets_updated | 4.2.1+26.3 |
+| server | vanish-1.6.16+26.3.jar | vanish | 1.6.16+26.3 |
+| server | veinminer-fabric-2.12.3.jar | veinminer | 2.12.3 |
+| server | village_taverns-fabric-1.3.1+26.3.jar | village_taverns | 1.3.1+26.3 |
+| server | village-quest-2.5.0-mc26.3.jar | village-quest | 2.5.0 |
+| server | voicechat-fabric-2.6.24+26.3.jar | voicechat | 2.6.24+26.3 |
+| server | waystones-fabric-26.3-26.3.0.1.jar | waystones | 26.3.0.1 |
+| server | wizards-fabric-3.1.4+26.3.jar | wizards | 3.1.4+26.3 |
+| server | world-backups-1.0.0.jar | local-world-backups | 1.2.0 |
+| server | xaerominimap-fabric-26.3-26.6.0.jar | xaerominimap | 26.6.0 |
+| host-client-only | AmbientSounds_FABRIC_v6.3.10_mc26.3.jar | ambientsounds | 6.3.10 |
+| host-client-only | CreativeCore_FABRIC_v2.14.19_mc26.3.jar | creativecore | 2.14.19 |
+| host-client-only | jei-26.3-fabric-31.14.0.72.jar | jei | 31.14.0.72 |
+| host-client-only | mezz_config-26.3-fabric-0.6.8.jar | mezz_config | 0.6.8 |
+| host-client-only | xaeroworldmap-fabric-26.3-1.47.0.jar | xaeroworldmap | 1.47.0 |
