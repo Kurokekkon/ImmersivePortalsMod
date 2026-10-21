@@ -4,6 +4,14 @@ An unofficial port and stabilization fork of Immersive Portals 6.0.6 for Minecra
 
 Based on the 26.3 port from [CaseBacon/ImmersivePortalsMod](https://github.com/CaseBacon/ImmersivePortalsMod), originally developed by [qouteall and iPortalTeam](https://github.com/iPortalTeam/ImmersivePortalsMod). Original authorship, notices and Apache-2.0 licensing are retained. This is not an official upstream release.
 
+## Download
+
+[**Download RC2 for Minecraft 26.3 (Fabric)**](https://github.com/Kurokekkon/ImmersivePortalsMod/raw/refs/heads/26.3/downloads/immersive-portals-6.0.6-mc26.3-fabric-rc2.jar)
+
+Filename: `immersive-portals-6.0.6-mc26.3-fabric-rc2.jar` — 2,955,099 bytes. Install this jar on both the server and clients, replacing the previous Immersive Portals jar.
+
+This is the tested RC2 binary under a neutral filename; its contents are unchanged. [SHA-256 checksum](downloads/SHA256SUMS.txt).
+
 ## Requirements and installation
 
 - Minecraft Java **26.3** and **Java 25**.
